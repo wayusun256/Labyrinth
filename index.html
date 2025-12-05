@@ -9,17 +9,20 @@
 
 <a-scene>
   <a-assets>
-    <a-asset-item id="kabe2" src="wall.glb"></a-asset-item>
-    <a-asset-item id="yuka" src="tile.glb"></a-asset-item>
+    <a-asset-item id="kabe2" src="kabe_debag.glb"></a-asset-item>
+    <a-asset-item id="yuka" src="yuka_debag.glb"></a-asset-item>
+    <a-asset-item id="cork" src="cork_debag.glb"></a-asset-item>
   </a-assets>
 
   <!-- シンプルなプレイヤー設定 -->
-  <a-entity id="rig" 
-            movement-controls 
-            position="2 1.6 2">
-    <a-entity camera
-              look-controls
-              position="0 0 0">
+  <a-entity id="rig" movement-controls position="2 1.6 2">
+    <a-entity camera look-controls cork-shooter position="0 0 0">
+      <!-- 十字線 -->
+      <a-entity id="crosshair" 
+                geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004"
+                material="color: red; shader: flat"
+                position="0 0 -1">
+      </a-entity>
     </a-entity>
   </a-entity>
 
@@ -28,6 +31,9 @@
 </a-scene>
 
 <script type="module">
+//コルク発射
+import './CorkFromTheEye.js';
+
 // シンプル版（Three.jsの機能を活用）
 // 修正版衝突判定コンポーネント
 AFRAME.registerComponent('movement-controls', {
@@ -120,7 +126,7 @@ AFRAME.registerComponent('movement-controls', {
   }
 });
 
-import { createKabe } from "./createkabe.js";
+import { createKabe } from "./createKabe.js";
 import { createFloors } from "./floor.js";
 
 const mazeArray = [
@@ -149,7 +155,9 @@ const scene = document.querySelector("#maze");
 
 createKabe(scene, mazeArray);
 createFloors(scene, 19);
+
+
+
 </script>
 </body>
-
 </html>

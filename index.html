@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>A-Frame Maze</title>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+</head>
+<body>
+
+<a-scene>
+  <a-assets>
+    <a-asset-item id="kabe2" src="wall.glb"></a-asset-item>
+    <a-asset-item id="yuka" src="tile.glb"></a-asset-item>
+  </a-assets>
+
+  <!-- シンプルなプレイヤー設定 -->
+  <a-entity id="rig" 
+            movement-controls 
+            position="2 1.6 2">
+    <a-entity camera
+              look-controls
+              position="0 0 0">
+    </a-entity>
+  </a-entity>
+
+  <a-entity id="maze"></a-entity>
+
+</a-scene>
+
+<script type="module">
+// シンプル版（Three.jsの機能を活用）
+// 修正版衝突判定コンポーネント
+AFRAME.registerComponent('movement-controls', {
+  init: function () {
+    this.velocity = new THREE.Vector3();
+    this.direction = new THREE.Vector3();
+    this.speed = 0.1;
+    
+    this.keys = {};
+    window.addEventListener('keydown', (e) => {
+      this.keys[e.code] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      this.keys[e.code] = false;
+    });
+  },
+  
+  tick: function () {
+    const el = this.el;
+    const position = el.getAttribute('position');
+    
+    // カメラの向きを取得
+    const camera = el.querySelector('[camera]');
+    const cameraRotation = camera.getAttribute('rotation');
+    
+    // カメラのY軸回転（左右の向き）を考慮
+    const angleY = THREE.MathUtils.degToRad(cameraRotation.y);
+    
+    this.direction.set(0, 0, 0);
+    
+    // カメラの向きに基づいて移動方向を計算
+    if (this.keys['KeyW'] || this.keys['ArrowUp']) {
+      // 前：カメラの向いている方向
+      this.direction.x -= Math.sin(angleY);
+      this.direction.z -= Math.cos(angleY);
+    }
+    if (this.keys['KeyS'] || this.keys['ArrowDown']) {
+      // 後：カメラの逆方向
+      this.direction.x += Math.sin(angleY);
+      this.direction.z += Math.cos(angleY);
+    }
+    if (this.keys['KeyA'] || this.keys['ArrowLeft']) {
+      // 左：カメラの左方向
+      this.direction.x -= Math.cos(angleY);
+      this.direction.z += Math.sin(angleY);
+    }
+    if (this.keys['KeyD'] || this.keys['ArrowRight']) {
+      // 右：カメラの右方向
+      this.direction.x += Math.cos(angleY);
+      this.direction.z -= Math.sin(angleY);
+    }
+    
+    // 正規化と速度適用
+    if (this.direction.length() > 0) {
+      this.direction.normalize();
+    }
+    
+    this.velocity.copy(this.direction).multiplyScalar(this.speed);
+    
+    // 衝突判定
+    const newPosition = {
+      x: position.x + this.velocity.x,
+      y: position.y + this.velocity.y,
+      z: position.z + this.velocity.z
+    };
+    
+    // 壁との衝突チェック
+    if (!this.checkWallCollision(newPosition)) {
+      el.setAttribute('position', newPosition);
+    }
+  },
+  
+  checkWallCollision: function(position) {
+    const walls = document.querySelectorAll('.wall-collision');
+    const playerRadius = 0.3;
+    
+    for (let wall of walls) {
+      const wallPos = wall.getAttribute('position');
+      const distance = Math.sqrt(
+        Math.pow(position.x - wallPos.x, 2) +
+        Math.pow(position.z - wallPos.z, 2)
+      );
+      
+      // 壁との距離が近すぎる場合は衝突
+      if (distance < playerRadius + 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+});
+
+import { createKabe } from "./createKabe.js";
+import { createFloors } from "./floor.js";
+
+const mazeArray = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1],
+  [1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+  [1,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1],
+  [1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1],
+  [1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,1],
+  [1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1],
+  [1,0,1,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,1],
+  [1,0,1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1],
+  [1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
+  [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1],
+  [1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1],
+  [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1],
+  [1,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+const scene = document.querySelector("#maze");
+
+createKabe(scene, mazeArray);
+createFloors(scene, 19);
+</script>
+</body>
+</html>
